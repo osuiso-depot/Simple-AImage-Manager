@@ -1,0 +1,7 @@
+image
+.code-workspace
+.vscode
+.venv
+__pycache__
+qt001.code-workspace
+build
