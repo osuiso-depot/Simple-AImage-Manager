@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QFileDialog
 from PIL import Image
 from PIL.ExifTags import TAGS
 import mod_sdiffusion
+from qss import *
 
 sd = mod_sdiffusion.SDChunk()
 
@@ -26,6 +27,7 @@ def sanitize_path(path):
     return full_path
 
 def qt_copy_image_to_clipboard(image_path):
+    # クリップボードに画像をコピーする
     mime_data = QMimeData()
     mime_data.setUrls([QUrl.fromLocalFile(image_path)])
     clipboard = QApplication.clipboard()
@@ -146,6 +148,8 @@ class ImageManager(QMainWindow):
         container = QWidget()
         container.setLayout(main_layout)
         self.setCentralWidget(container)
+
+        apply_styles(container)
 
         self.setAcceptDrops(True)  # ウィンドウ全体でドロップを受け付けるように設定
 
