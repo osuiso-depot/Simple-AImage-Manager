@@ -5,3 +5,4 @@ image
 __pycache__
 qt001.code-workspace
 build
+dist
