@@ -81,6 +81,7 @@ class ImageInfoWidget(QWidget):
         self.image_label.setFixedSize(300, 300)  # 表示サイズを幅300高さ300に設定
         self.info_label = QTextEdit()
         self.info_label.setReadOnly(True)
+        self.info_label.setAcceptRichText(True)  # HTML形式のテキストを受け入れるように設定
         self.layout.addWidget(self.image_label)
         self.layout.addWidget(self.info_label)
         self.setLayout(self.layout)
@@ -90,7 +91,9 @@ class ImageInfoWidget(QWidget):
         if OPTION_SHOW_IMAGE:
             scaled_pixmap = pixmap.scaled(300, 300, Qt.KeepAspectRatio)
             self.image_label.setPixmap(scaled_pixmap)
-        self.info_label.setText(f"Image Path: {image_path}\nSize: {pixmap.width()} x {pixmap.height()}")
+        info_text = f"Image Path: {image_path}\nSize: {pixmap.width()} x {pixmap.height()}"
+        info_text = info_text.replace("\n", "<br>")  # 改行文字を <br> に置き換え
+        self.info_label.setHtml(info_text)  # HTML形式でテキストを設定
 
         # メタデータの表示
         if image_path.lower().endswith('.jpg') or image_path.lower().endswith('.jpeg'):
@@ -103,9 +106,9 @@ class ImageInfoWidget(QWidget):
         elif image_path.lower().endswith('.png'):
             meta_dat = sd.create_data({'path':image_path}, 'image')
             if meta_dat:
-                self.info_label.append(f"Prompt: {meta_dat['data']['prompt']}")
-                self.info_label.append(f"Negative: {meta_dat['data']['negative']}")
-                self.info_label.append(f"Options: {meta_dat['data']['options']}")
+                self.info_label.append(f"Prompt: \n{meta_dat['data']['prompt']}")
+                self.info_label.append(f"Negative: \n{meta_dat['data']['negative']}")
+                self.info_label.append(f"Options: \n{meta_dat['data']['options']}")
 
 class ImageManager(QMainWindow):
     def __init__(self):

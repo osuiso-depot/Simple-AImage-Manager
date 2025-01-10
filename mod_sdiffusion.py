@@ -5,6 +5,7 @@ import datetime
 import pytz
 import struct
 import zlib
+import regex as re
 
 class SDChunk:
     def conv_local_date(self, t: str, frmt: str = "%Y-%m-%d %H:%M:%S.%f") -> str:
@@ -76,13 +77,14 @@ class SDChunk:
         prompt = ""
         negative = ""
         options = ""
+        pattern_negaline = r"Negative prompt: "
 
         while line_i < len(sptext) and not sptext[line_i].strip().startswith("Negative prompt"):
-            prompt += sptext[line_i].strip()
+            prompt += sptext[line_i].strip() + "\n"
             line_i += 1
 
-        if line_i < len(sptext):
-            negative = sptext[line_i].strip().replace("Negative prompt:", "").strip()
+        while line_i < len(sptext) and not re.match(r"Steps: \d+", sptext[line_i].strip()):
+            negative += re.sub(pattern_negaline, "", sptext[line_i].strip()) + "\n"
             line_i += 1
 
         if line_i < len(sptext):
@@ -90,9 +92,11 @@ class SDChunk:
 
         return {'prompt': prompt, 'negative': negative, 'options': options}
 
+    # 本のコード
     def png_chunk(self, pngpath: str) -> list:
         """
-        png chunkの配列を返す
+        PNGファイルのtEXtおよびiTXtチャンクを解析し、内容を返す。
+        非コピー可能な文字を適切に処理する。
         """
         try:
             with open(pngpath, 'rb') as f:
@@ -104,19 +108,30 @@ class SDChunk:
                 length = struct.unpack('>I', data[offset:offset + 4])[0]
                 chunk_type = data[offset + 4:offset + 8].decode('ascii')
                 chunk_data = data[offset + 8:offset + 8 + length]
-                crc = data[offset + 8 + length:offset + 12 + length]
-                offset += 12 + length
+                offset += 12 + length  # 長さ + タイプ + CRC
 
-                if chunk_type == 'tEXt' or chunk_type == 'iTXt':
-                    keyword, text = chunk_data.split(b'\x00', 1)
-                    chunks.append({
-                        'keyword': keyword.decode('utf-8'),
-                        'text': text.decode('utf-8')
-                    })
+                if chunk_type in ('tEXt', 'iTXt'):
+                    try:
+                        keyword, text = chunk_data.split(b'\x00', 1)
+                        keyword_str = keyword.decode('utf-8', errors='replace')
+                        text_str = text.decode('utf-8', errors='ignore')
+
+                        # ヌル文字が先頭に含まれることがあるので削除
+                        text_str = text_str.replace('\x00', '')
+
+                        chunks.append({
+                            'keyword': keyword_str,
+                            'text': text_str
+                        })
+                    except Exception as e:
+                        chunks.append({
+                            'keyword': 'Invalid',
+                            'text': f'Error decoding text: {e}'
+                        })
 
             return chunks
         except Exception as err:
-            raise ValueError(err)
+            raise ValueError(f"Error processing PNG file: {err}")
 
 # 使用例
 # fileobject = type('FileObject', (object,), {'path': 'path_to_png_file.png'})
